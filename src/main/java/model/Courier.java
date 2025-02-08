@@ -1,6 +1,6 @@
 package model;
 
-import java.util.Random;
+import com.github.javafaker.Faker;
 
 public class Courier {
     private String login;
@@ -31,14 +31,7 @@ public class Courier {
     }
 
     public static String generationLogin() {
-        Random random = new Random();
-
-        StringBuilder login = new StringBuilder();
-        for(int i = 0; i< 7;i++) {
-            char character = (char) (random.nextInt(26) + 'a');
-            login.append(character);
-        }
-
-        return login.toString();
+        Faker faker = new Faker();
+        return faker.name().username();
     }
 }
