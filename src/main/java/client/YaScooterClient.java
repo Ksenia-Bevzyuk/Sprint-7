@@ -2,60 +2,166 @@ package client;
 
 import io.qameta.allure.Step;
 import io.qameta.allure.restassured.AllureRestAssured;
+import io.restassured.builder.RequestSpecBuilder;
 import io.restassured.response.ValidatableResponse;
+import io.restassured.specification.RequestSpecification;
 import model.Courier;
 import model.Credentials;
+import model.Order;
 import static io.restassured.RestAssured.given;
 
 public class YaScooterClient {
-    private String baseURI;
 
-    public YaScooterClient(String baseURI) {
-        this.baseURI = baseURI;
+    RequestSpecification requestSpec;
+
+    public YaScooterClient() {
+        RequestSpecBuilder builder = new RequestSpecBuilder()
+                .setBaseUri("https://qa-scooter.praktikum-services.ru")
+                .setContentType("application/json");
+        requestSpec = builder.build();
     }
-    @Step("Клиент: создать курьера")
+
+    @Step("Создать курьера")
     public ValidatableResponse createCourier(Courier courier) {
         return given()
                 .filter(new AllureRestAssured())
                 .log()
                 .all()
-                .baseUri(baseURI)
-                .header("Content-Type", "application/json")
+                .spec(requestSpec)
                 .body(courier)
-                .post("/api/v1/courier")
+                .post(EndPoints.CREATE_COURIER)
                 .then()
                 .log()
                 .all();
     }
 
-    @Step("Клиент: логин курьера")
+    @Step("Логин курьера")
     public ValidatableResponse loginCourier(Credentials credentials) {
         return
                 given()
                         .filter(new AllureRestAssured())
                         .log()
                         .all()
-                        .baseUri(baseURI)
-                        .header("Content-Type", "application/json")
+                        .spec(requestSpec)
                         .body(credentials)
-                        .post("/api/v1/courier/login")
+                        .post(EndPoints.LOGIN_COURIER)
                         .then()
                         .log()
                         .all();
     }
 
-    @Step("Клиент: удаление курьера")
+    @Step("Удаление курьера")
     public ValidatableResponse deleteCourier(Credentials credentials) {
         ValidatableResponse response = loginCourier(credentials);
         int id = response.extract().jsonPath().getInt("id");
-        String jsonDel = "{\"id\": \"Integer.toString(id)\"}";
         return given()
                 .log()
                 .all()
-                .baseUri(baseURI)
-                .header("Content-Type", "application/json")
-                .body(jsonDel)
-                .delete("/api/v1/courier/" + id)
+                .spec(requestSpec)
+                .delete(EndPoints.DELETE_COURIER + id)
+                .then()
+                .log()
+                .all();
+    }
+
+    @Step("Создание заказа")
+    public ValidatableResponse createOrder(Order order) {
+        return given()
+                .filter(new AllureRestAssured())
+                .log()
+                .all()
+                .spec(requestSpec)
+                .body(order)
+                .post(EndPoints.CREATE_ORDER)
+                .then()
+                .log()
+                .all();
+    }
+
+    @Step("Отмена заказа")
+    public ValidatableResponse cancelOrder(ValidatableResponse response) {
+        int track = response.extract().jsonPath().getInt("track");
+        String jsonCancel = "{\"track\": " + track+ "}";
+        return given()
+                .filter(new AllureRestAssured())
+                .log()
+                .all()
+                .spec(requestSpec)
+                .body(jsonCancel)
+                .put(EndPoints.CANCEL_ORDER)
+                .then()
+                .log()
+                .all();
+    }
+
+    @Step("Получить список заказов с query-параметром limit")
+    public ValidatableResponse getOrdersWithLimit() {
+        return given()
+                .filter(new AllureRestAssured())
+                .log()
+                .all()
+                .spec(requestSpec)
+                .queryParam("limit", "2")
+                .get(EndPoints.GET_ORDER)
+                .then()
+                .log()
+                .all();
+    }
+
+    @Step("Получить список заказов с query-параметром page")
+    public ValidatableResponse getOrdersWithPage() {
+        return given()
+                .filter(new AllureRestAssured())
+                .log()
+                .all()
+                .spec(requestSpec)
+                .queryParam("page", "1")
+                .get(EndPoints.GET_ORDER)
+                .then()
+                .log()
+                .all();
+    }
+
+    @Step("Получить список заказов с query-параметром station")
+    public ValidatableResponse getOrdersWithStation() {
+        return given()
+                .filter(new AllureRestAssured())
+                .log()
+                .all()
+                .spec(requestSpec)
+                .queryParam("nearestStation", "[\"1\"]")
+                .get(EndPoints.GET_ORDER)
+                .then()
+                .log()
+                .all();
+    }
+
+    @Step("Получить список заказов с query-параметрами limit&page")
+    public ValidatableResponse getOrdersWithLimitAndPage() {
+        return given()
+                .filter(new AllureRestAssured())
+                .log()
+                .all()
+                .spec(requestSpec)
+                .queryParam("limit", "2")
+                .queryParam("page", "1")
+                .get(EndPoints.GET_ORDER)
+                .then()
+                .log()
+                .all();
+    }
+
+    @Step("Получить список заказов с query-параметрами limit&page&station")
+    public ValidatableResponse getOrdersWithLimitAndPageAndStation() {
+        return given()
+                .filter(new AllureRestAssured())
+                .log()
+                .all()
+                .spec(requestSpec)
+                .queryParam("limit", "2")
+                .queryParam("page", "1")
+                .queryParam("nearestStation", "[\"1\"]")
+                .get(EndPoints.GET_ORDER)
                 .then()
                 .log()
                 .all();
