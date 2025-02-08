@@ -1,3 +1,4 @@
+import client.YaScooterClient;
 import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.response.ValidatableResponse;
@@ -6,13 +7,14 @@ import org.junit.After;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
+import static org.apache.http.HttpStatus.SC_CREATED;
+import static org.apache.http.HttpStatus.SC_OK;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class CreateOrderTest {
-    private static final String BASE_URI = "https://qa-scooter.praktikum-services.ru";
-
     private String firstName;
     private String lastName;
     private String address;
@@ -23,7 +25,9 @@ public class CreateOrderTest {
     private String comment;
     private String[] color;
 
-//    Order order;
+    private Order order;
+    private YaScooterClient client;
+    private ValidatableResponse response;
 
     public CreateOrderTest(String firstName, String lastName, String address,
                            String metroStation, String phone, int rentTime,
@@ -57,17 +61,17 @@ public class CreateOrderTest {
     @DisplayName("POST /api/v1/orders создание заказа")
     @Description("Успешное создание заказа с параметрами данных для создания заказа")
     public void createOrderTest() {
-        Order order = new Order(firstName, lastName, address, metroStation,
-                phone, rentTime, deliveryDate, comment, color, BASE_URI);
-        ValidatableResponse response =
-                order.createOrder(order);
-        response.assertThat().statusCode(201).body("track", notNullValue());
+        order = new Order(firstName, lastName, address, metroStation,
+                phone, rentTime, deliveryDate, comment, color);
+        client = new YaScooterClient();
+        response =
+                client.createOrder(order);
+        response.assertThat().statusCode(SC_CREATED).body("track", notNullValue());
     }
 
-// Закомментировано по причине неработающей ручки отмены заказа
-//    @After
-//    public void cancelOrder() {
-//        ValidatableResponse response = order.cancelOrder(order);
-//        assumeTrue(response.extract().statusCode() == 200);
-//    }
+    @After
+    public void cancelOrder() {
+        ValidatableResponse responseCancel = client.cancelOrder(response);
+        assertTrue(responseCancel.extract().statusCode() == SC_OK);
+    }
 }

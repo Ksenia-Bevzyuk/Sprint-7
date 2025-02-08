@@ -6,12 +6,13 @@ import model.Courier;
 import model.Credentials;
 import org.junit.After;
 import org.junit.Test;
+import static org.apache.http.HttpStatus.*;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 
 
 public class CreateCourierTest {
-    private static final String BASE_URI = "https://qa-scooter.praktikum-services.ru";
+
     private Courier courier;
     private ValidatableResponse response;
 
@@ -22,9 +23,9 @@ public class CreateCourierTest {
         String genLogin = Courier.generationLogin();
 
         courier = new Courier(genLogin, "1234", "Sam");
-        YaScooterClient client = new YaScooterClient(BASE_URI);
+        YaScooterClient client = new YaScooterClient();
         response = client.createCourier(courier);
-        response.assertThat().statusCode(201).body("ok", equalTo(true));
+        response.assertThat().statusCode(SC_CREATED).body("ok", equalTo(true));
     }
 
     @Test
@@ -34,9 +35,9 @@ public class CreateCourierTest {
         String genLogin = Courier.generationLogin();
 
         courier = new Courier(genLogin, "1234");
-        YaScooterClient client = new YaScooterClient(BASE_URI);
+        YaScooterClient client = new YaScooterClient();
         response = client.createCourier(courier);
-        response.assertThat().statusCode(201).body("ok", equalTo(true));
+        response.assertThat().statusCode(SC_CREATED).body("ok", equalTo(true));
     }
 
     @Test
@@ -46,13 +47,30 @@ public class CreateCourierTest {
         String genLogin = Courier.generationLogin();
 
         courier = new Courier(genLogin,null);
-        YaScooterClient client = new YaScooterClient(BASE_URI);
+        YaScooterClient client = new YaScooterClient();
         response = client.createCourier(courier);
 
         int statusCode = response.extract().statusCode();
-        assertEquals("Ожидается код ответа 400",400, statusCode);
+        assertEquals("Ожидается код ответа 400", SC_BAD_REQUEST, statusCode);
         String body = response.extract().jsonPath().getString("message");
         assertEquals("Ожидается другое сообщение","Недостаточно данных для создания учетной записи", body);
+    }
+
+    @Test
+    @DisplayName("POST /api/v1/courier корректный пароль, логин null")
+    @Description("Код 400 при создании курьера только с полем пароль, логин - null")
+    public void createCourierWithFieldPassOnlyStatusCode400Test() {
+        String genLogin = Courier.generationLogin();
+
+        courier = new Courier(null,"1234");
+        YaScooterClient client = new YaScooterClient();
+        response = client.createCourier(courier);
+
+        int statusCode = response.extract().statusCode();
+        assertEquals("Ожидается код ответа 400", SC_BAD_REQUEST, statusCode);
+        String body = response.extract().jsonPath().getString("message");
+        assertEquals("Ожидается другое сообщение",
+                "Недостаточно данных для создания учетной записи", body);
     }
 
     @Test
@@ -63,12 +81,12 @@ public class CreateCourierTest {
 
         courier = new Courier(genLogin, "1234", "Sam");
 
-        YaScooterClient client = new YaScooterClient(BASE_URI);
+        YaScooterClient client = new YaScooterClient();
         client.createCourier(courier);
         response = client.createCourier(courier);
 
         int statusCode = response.extract().statusCode();
-        assertEquals("Ожидается код ответа 409",409, statusCode);
+        assertEquals("Ожидается код ответа 409", SC_CONFLICT, statusCode);
         String body = response.extract().jsonPath().getString("message");
         assertEquals("Ожидается другое сообщение","Этот логин уже используется", body);
     }
@@ -76,21 +94,12 @@ public class CreateCourierTest {
     @After
     @DisplayName("DELETE /api/v1/courier/:id")
     @Description("Удаление записей о курьерах после каждого теста")
-    public void deleteCourier() throws UnsupportedOperationException{
-        if (response.extract().statusCode() != 400) {
+    public void deleteCourier() {
+        if (response.extract().statusCode() != SC_BAD_REQUEST) {
             Credentials credentials = Credentials.fromCourier(courier);
-            YaScooterClient client = new YaScooterClient(BASE_URI);
+            YaScooterClient client = new YaScooterClient();
             response = client.deleteCourier(credentials);
-            client.loginCourier(credentials).assertThat().statusCode(404);
+            client.loginCourier(credentials).assertThat().statusCode(SC_NOT_FOUND);
         }
-
-//        if(response.extract().statusCode() == 400){
-//                throw new UnsupportedOperationException("Отсутствует запись курьера для удаления");
-//        }
-//        Credentials credentials = Credentials.fromCourier(courier);
-//        YaScooterClient client = new YaScooterClient(BASE_URI);
-//        response = client.deleteCourier(credentials);
-//        client.loginCourier(credentials).assertThat().statusCode(404);
-//        }
     }
 }

@@ -7,25 +7,25 @@ import model.Credentials;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import static org.apache.http.HttpStatus.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeTrue;
 
 public class LoginCourierTest {
-    private static final String BASE_URI = "https://qa-scooter.praktikum-services.ru";
     private Courier courier;
     private YaScooterClient client;
     private String genLogin;
-    ValidatableResponse response;
+    private ValidatableResponse response;
 
     @Before
     public void before() {
         genLogin = Courier.generationLogin();
 
         courier = new Courier(genLogin, "1234", "Sam");
-        client = new YaScooterClient(BASE_URI);
+        client = new YaScooterClient();
         response = client.createCourier(courier);
-        assumeTrue(response.extract().statusCode() == 201);
+        assumeTrue(response.extract().statusCode() == SC_CREATED);
     }
 
     @Test
@@ -33,7 +33,7 @@ public class LoginCourierTest {
     @Description("При передаче обязательных полей в запросе возвращается id курьера")
     public void courierLoginSuccess() {
         Credentials credentials = Credentials.fromCourier(courier);
-        client.loginCourier(credentials).assertThat().statusCode(200).body("id", notNullValue());
+        client.loginCourier(credentials).assertThat().statusCode(SC_OK).body("id", notNullValue());
     }
 
     @Test
@@ -42,7 +42,7 @@ public class LoginCourierTest {
     public void courierLoginWithNonExistentPass() {
         ValidatableResponse responseTest = client.loginCourier(new Credentials(genLogin, "4321"));
         int statusCode = responseTest.extract().statusCode();
-        assertEquals("Ожидается код ответа 404",404, statusCode);
+        assertEquals("Ожидается код ответа 404", SC_NOT_FOUND, statusCode);
         String body = responseTest.extract().jsonPath().getString("message");
         assertEquals("Ожидается другое сообщение","Учетная запись не найдена", body);
     }
@@ -53,7 +53,7 @@ public class LoginCourierTest {
     public void courierLoginWithNonExistentLogin() {
         ValidatableResponse responseTest = client.loginCourier(new Credentials("№%:;", "1234"));
         int statusCode = responseTest.extract().statusCode();
-        assertEquals("Ожидается код ответа 404",404, statusCode);
+        assertEquals("Ожидается код ответа 404", SC_NOT_FOUND, statusCode);
         String body = responseTest.extract().jsonPath().getString("message");
         assertEquals("Ожидается другое сообщение","Учетная запись не найдена", body);
     }
@@ -64,7 +64,7 @@ public class LoginCourierTest {
     public void courierLoginWithNullLogin() {
         ValidatableResponse responseTest = client.loginCourier(new Credentials(null, "1234"));
         int statusCode = responseTest.extract().statusCode();
-        assertEquals("Ожидается код ответа 400",400, statusCode);
+        assertEquals("Ожидается код ответа 400", SC_BAD_REQUEST, statusCode);
         String body = responseTest.extract().jsonPath().getString("message");
         assertEquals("Ожидается другое сообщение","Недостаточно данных для входа", body);
     }
@@ -75,7 +75,7 @@ public class LoginCourierTest {
     public void courierLoginWithNullPass() {
         ValidatableResponse responseTest = client.loginCourier(new Credentials(genLogin, ""));
         int statusCode = responseTest.extract().statusCode();
-        assertEquals("Ожидается код ответа 400",400, statusCode);
+        assertEquals("Ожидается код ответа 400", SC_BAD_REQUEST, statusCode);
         String body = responseTest.extract().jsonPath().getString("message");
         assertEquals("Ожидается другое сообщение","Недостаточно данных для входа", body);
     }
@@ -84,11 +84,11 @@ public class LoginCourierTest {
     @DisplayName("DELETE /api/v1/courier/:id")
     @Description("Удаление записей о курьерах после каждого теста")
     public void deleteCourier() {
-        if (response.extract().statusCode() == 201) {
+        if (response.extract().statusCode() == SC_CREATED) {
             Credentials credentials = Credentials.fromCourier(courier);
-            YaScooterClient client = new YaScooterClient(BASE_URI);
-            response = client.deleteCourier(credentials);
-            client.loginCourier(credentials).assertThat().statusCode(404);
+            YaScooterClient client = new YaScooterClient();
+            client.deleteCourier(credentials).assertThat().statusCode(SC_OK);
+            client.loginCourier(credentials).assertThat().statusCode(SC_NOT_FOUND);
         }
     }
 }
