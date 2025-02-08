@@ -1,12 +1,7 @@
 package model;
 
-import io.qameta.allure.restassured.AllureRestAssured;
-import io.restassured.response.ValidatableResponse;
-
-import static io.restassured.RestAssured.given;
 
 public class Order {
-    private String baseURI;
 
     private String firstName;
     private String lastName;
@@ -20,7 +15,7 @@ public class Order {
 
     public Order(String firstName, String lastName, String address,
                  String metroStation, String phone, int rentTime,
-                 String deliveryDate, String comment, String[] color, String baseURI) {
+                 String deliveryDate, String comment, String[] color) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.address = address;
@@ -30,18 +25,9 @@ public class Order {
         this.deliveryDate = deliveryDate;
         this.comment = comment;
         this.color = color;
-        this.baseURI = baseURI;
     }
 
     public Order() {
-    }
-
-    public Order(String baseURI) {
-        this.baseURI = baseURI;
-    }
-
-    public String getBaseURI() {
-        return baseURI;
     }
 
     public String getFirstName() {
@@ -78,36 +64,5 @@ public class Order {
 
     public String[] getColor() {
         return color;
-    }
-
-    public ValidatableResponse createOrder(Order order) {
-        return given()
-                .filter(new AllureRestAssured())
-                .log()
-                .all()
-                .baseUri(baseURI)
-                .header("Content-Type", "application/json")
-                .body(order)
-                .post("/api/v1/orders")
-                .then()
-                .log()
-                .all();
-    }
-
-    public ValidatableResponse cancelOrder(Order order) {
-        ValidatableResponse response = createOrder(order);
-        int track = response.extract().jsonPath().getInt("track");
-        String jsonCancel = "{\"track\": " + track+ "}";
-        return given()
-                .filter(new AllureRestAssured())
-                .log()
-                .all()
-                .baseUri(baseURI)
-                .header("Content-Type", "application/json")
-                .body(jsonCancel)
-                .put("/api/v1/orders/cancel")
-                .then()
-                .log()
-                .all();
     }
 }
