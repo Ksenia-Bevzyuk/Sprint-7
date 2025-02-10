@@ -8,6 +8,8 @@ import io.restassured.specification.RequestSpecification;
 import model.Courier;
 import model.Credentials;
 import model.Order;
+import model.Track;
+
 import static io.restassured.RestAssured.given;
 
 public class YaScooterClient {
@@ -80,14 +82,14 @@ public class YaScooterClient {
 
     @Step("Отмена заказа")
     public ValidatableResponse cancelOrder(ValidatableResponse response) {
-        int track = response.extract().jsonPath().getInt("track");
-        String jsonCancel = "{\"track\": " + track+ "}";
+        int trackNumber = response.extract().jsonPath().getInt("track");
+        Track track = new Track(trackNumber);
         return given()
                 .filter(new AllureRestAssured())
                 .log()
                 .all()
                 .spec(requestSpec)
-                .body(jsonCancel)
+                .body(track)
                 .put(EndPoints.CANCEL_ORDER)
                 .then()
                 .log()
